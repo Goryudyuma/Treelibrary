@@ -92,13 +92,13 @@
 //#include <bits/stdc++.h>
 using namespace std;
 
-template <typename D, typename T = D>
+template <typename D, typename T = D, typename L = T>
 class Tree
 {
 public:
 	Tree( long long int size = 0, D InitialValueArg = D() ) {
 		long long int n = 1LL;
-		CalcTree.emplace_back( vector<T>( n ) );
+		CalcTree.emplace_back( vector<TreeNode>( n ) );
 		while( n <= size ) {
 			n <<= 1LL;
 			addOneLine( n );
@@ -120,15 +120,24 @@ public:
 		return a;
 	}
 
+	virtual L lazyupdate( L parent, L me ) {
+		return parent;
+	}
+
+	virtual T fromlazytotreenode( L lazy, T nownode ) {
+		return nownode;
+	}
+
 	void update( long long int idx, D data ) {
+		calcLazyUpdate( idx, idx + 1 );
 		Data[idx] = data;
-		(*(CalcTree.rbegin()))[idx] = preprocessing( data );
+		(*(CalcTree.rbegin()))[idx].first = preprocessing( data );
 		for( auto ite = CalcTree.rbegin(); ite + 1 < CalcTree.rend(); ) {
 			idx >>= 1LL;
-			T updatedata = treeupdate( (*ite)[idx * 2], (*ite)[idx * 2 + 1] );
+			T updatedata = treeupdate( (*ite)[idx * 2].first, (*ite)[idx * 2 + 1].first );
 			ite++;
-			if( (*ite)[idx] != updatedata ) {
-				(*ite)[idx] = updatedata;
+			if( (*ite)[idx].first != updatedata ) {
+				(*ite)[idx].first = updatedata;
 			} else {
 				break;
 			}
@@ -160,6 +169,7 @@ public:
 	}
 
 	T range( long long int l, long long int r ) {
+		calcLazyUpdate( l, r );
 		return rangeProcessing( 0, l, r, 0, 0, MaxSize );
 	}
 
@@ -168,25 +178,49 @@ public:
 	}
 
 private:
-	vector<vector<T>> CalcTree;
+	typedef pair<T, pair<long long int, L>> TreeNode;
+	vector<vector<TreeNode>> CalcTree;
 	vector<D> Data;
 	long long int MaxSize;
 	long long int NowIndex;
 	D InitialValue;
 
 	void addOneLine( long long int n ) {
-		CalcTree.emplace_back( vector<T>( n ) );
+		CalcTree.emplace_back( vector<TreeNode>( n ) );
 	}
 
 	T rangeProcessing( long long int d, long long int a, long long int b, long long int k, long long int l, long long int r ) {
 		if( !(r <= a || b <= l) && d < CalcTree.size() ) {
 			if( a <= l&&r <= b ) {
-				return CalcTree[d][k];
+				return CalcTree[d][k].first;
 			} else {
 				return treeupdate( rangeProcessing( d + 1, a, b, k * 2, l, (l + r) / 2 ), rangeProcessing( d + 1, a, b, k * 2 + 1, (l + r) / 2, r ) );
 			}
 		}
 		return InitialValue;
+	}
+
+	void calcLazyUpdate( long long int idxl, long long int idxr, long long int i = 0, long long int nowidx = 0 ) {
+		if( i < CalcTree.size() - 1 ) {
+			CalcTree[i + 1][nowidx * 2].second.second = lazyupdate( CalcTree[i][nowidx].second.second, CalcTree[i + 1][nowidx * 2].second.second );
+			CalcTree[i + 1][nowidx * 2 + 1].second.second = lazyupdate( CalcTree[i][nowidx].second.second, CalcTree[i + 1][nowidx * 2 + 1].second.second );
+			CalcTree[i][nowidx].second.second = L();
+			long long int nextidxplus = 1LL << (CalcTree.size() - i - 1);
+			nowidx *= 2;
+			if( idxr <= nowidx + nextidxplus ) {
+				calcLazyUpdate( idxl, idxr, i + 1, nowidx );
+			} else if( nowidx + nextidxplus <= idxl ) {
+				calcLazyUpdate( idxl, idxr, i + 1, nowidx + 1 );
+			} else {
+				calcLazyUpdate( nowidx + nextidxplus, idxr, i + 1, nowidx + 1 );
+				calcLazyUpdate( idxl, nowidx + nextidxplus, i + 1, nowidx );
+			}
+		} else {
+			T nextT = fromlazytotreenode( CalcTree[i][nowidx].second.second, CalcTree[i][nowidx].first );
+			if( nextT != CalcTree[i][nowidx].first ) {
+				update( nowidx, nextT );
+			}
+		}
 	}
 };
 
