@@ -131,17 +131,12 @@ public:
 	void update( long long int idx, D data ) {
 		calcLazyUpdate( idx, idx + 1 );
 		Data[idx] = data;
-		(*(CalcTree.rbegin()))[idx].Ndata = preprocessing( data );
-		for( auto ite = CalcTree.rbegin(); ite + 1 < CalcTree.rend(); ) {
-			idx >>= 1LL;
-			T updatedata = treeupdate( (*ite)[idx * 2].Ndata, (*ite)[idx * 2 + 1].Ndata );
-			ite++;
-			if( (*ite)[idx].Ndata != updatedata ) {
-				(*ite)[idx].Ndata = updatedata;
-			} else {
-				break;
-			}
-		}
+
+		updateTreeNodeidx( idx, preprocessing( data ) );
+	}
+
+	void rangeupdate( long long int idxl, long long int idxr, L data ) {
+
 	}
 
 	void show() {
@@ -179,12 +174,12 @@ public:
 
 private:
 
-//一つのノード
+	//一つのノード
 	typedef struct TreeNode
 	{
 		T Ndata;
 
-//遅延データ
+		//遅延データ
 		struct
 		{
 			long long int Lnum;
@@ -230,9 +225,27 @@ private:
 		} else {
 			T nextT = fromlazytotreenode( CalcTree[i][nowidx].Ldata, CalcTree[i][nowidx].Ndata );
 			if( nextT != CalcTree[i][nowidx].Ndata ) {
-				update( nowidx, nextT );
+				updateTreeNodeidx( nowidx, nextT );
 			}
 		}
+	}
+
+	void updateTreeNodeidx( long long int idx, T TreeNodeData ) {
+		(*(CalcTree.rbegin()))[idx].Ndata = preprocessing( TreeNodeData );
+		for( auto ite = CalcTree.rbegin(); ite + 1 < CalcTree.rend(); ) {
+			idx >>= 1LL;
+			T updatedata = treeupdate( (*ite)[idx * 2].Ndata, (*ite)[idx * 2 + 1].Ndata );
+			ite++;
+			if( (*ite)[idx].Ndata != updatedata ) {
+				(*ite)[idx].Ndata = updatedata;
+			} else {
+				break;
+			}
+		}
+	}
+
+	long long int addrangeLazy( long long int idxl, long long int idxr, long long int i = 0, long long int nowidx = 0 ) {
+
 	}
 };
 
