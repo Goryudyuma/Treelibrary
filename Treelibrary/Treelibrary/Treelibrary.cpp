@@ -131,13 +131,13 @@ public:
 	void update( long long int idx, D data ) {
 		calcLazyUpdate( idx, idx + 1 );
 		Data[idx] = data;
-		(*(CalcTree.rbegin()))[idx].first = preprocessing( data );
+		(*(CalcTree.rbegin()))[idx].Ndata = preprocessing( data );
 		for( auto ite = CalcTree.rbegin(); ite + 1 < CalcTree.rend(); ) {
 			idx >>= 1LL;
-			T updatedata = treeupdate( (*ite)[idx * 2].first, (*ite)[idx * 2 + 1].first );
+			T updatedata = treeupdate( (*ite)[idx * 2].Ndata, (*ite)[idx * 2 + 1].Ndata );
 			ite++;
-			if( (*ite)[idx].first != updatedata ) {
-				(*ite)[idx].first = updatedata;
+			if( (*ite)[idx].Ndata != updatedata ) {
+				(*ite)[idx].Ndata = updatedata;
 			} else {
 				break;
 			}
@@ -178,7 +178,19 @@ public:
 	}
 
 private:
-	typedef pair<T, pair<long long int, L>> TreeNode;
+
+//一つのノード
+	typedef struct TreeNode
+	{
+		T Ndata;
+
+//遅延データ
+		struct
+		{
+			long long int Lnum;
+			L Ldata;
+		};
+	};
 	vector<vector<TreeNode>> CalcTree;
 	vector<D> Data;
 	long long int MaxSize;
@@ -192,7 +204,7 @@ private:
 	T rangeProcessing( long long int d, long long int a, long long int b, long long int k, long long int l, long long int r ) {
 		if( !(r <= a || b <= l) && d < CalcTree.size() ) {
 			if( a <= l&&r <= b ) {
-				return CalcTree[d][k].first;
+				return CalcTree[d][k].Ndata;
 			} else {
 				return treeupdate( rangeProcessing( d + 1, a, b, k * 2, l, (l + r) / 2 ), rangeProcessing( d + 1, a, b, k * 2 + 1, (l + r) / 2, r ) );
 			}
@@ -202,9 +214,9 @@ private:
 
 	void calcLazyUpdate( long long int idxl, long long int idxr, long long int i = 0, long long int nowidx = 0 ) {
 		if( i < CalcTree.size() - 1 ) {
-			CalcTree[i + 1][nowidx * 2].second.second = lazyupdate( CalcTree[i][nowidx].second.second, CalcTree[i + 1][nowidx * 2].second.second );
-			CalcTree[i + 1][nowidx * 2 + 1].second.second = lazyupdate( CalcTree[i][nowidx].second.second, CalcTree[i + 1][nowidx * 2 + 1].second.second );
-			CalcTree[i][nowidx].second.second = L();
+			CalcTree[i + 1][nowidx * 2].Ldata = lazyupdate( CalcTree[i][nowidx].Ldata, CalcTree[i + 1][nowidx * 2].Ldata );
+			CalcTree[i + 1][nowidx * 2 + 1].Ldata = lazyupdate( CalcTree[i][nowidx].Ldata, CalcTree[i + 1][nowidx * 2 + 1].Ldata );
+			CalcTree[i][nowidx].Ldata = L();
 			long long int nextidxplus = 1LL << (CalcTree.size() - i - 1);
 			nowidx *= 2;
 			if( idxr <= nowidx + nextidxplus ) {
@@ -216,8 +228,8 @@ private:
 				calcLazyUpdate( idxl, nowidx + nextidxplus, i + 1, nowidx );
 			}
 		} else {
-			T nextT = fromlazytotreenode( CalcTree[i][nowidx].second.second, CalcTree[i][nowidx].first );
-			if( nextT != CalcTree[i][nowidx].first ) {
+			T nextT = fromlazytotreenode( CalcTree[i][nowidx].Ldata, CalcTree[i][nowidx].Ndata );
+			if( nextT != CalcTree[i][nowidx].Ndata ) {
 				update( nowidx, nextT );
 			}
 		}
